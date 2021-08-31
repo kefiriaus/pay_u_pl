@@ -1,0 +1,43 @@
+name: Tests
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+jobs:
+  rubocop:
+    name: rubocop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v1
+      - name: Setup ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.5.8
+      - name: rubocop
+        uses: reviewdog/action-rubocop@v1
+        with:
+          rubocop_version: gemfile
+          rubocop_extensions: rubocop-rspec:gemfile
+          github_token: ${{ secrets.github_token }}
+          reporter: github-pr-review
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:6-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Ruby 2.5
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.5.x
+
+      - name: Build and test with Rake
+        run: |
+          gem install bundler -v 1.17.3
+          bundle install --jobs 4 --retry 3 --deployment
+          bundle exec rake
